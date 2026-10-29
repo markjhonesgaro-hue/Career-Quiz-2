@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Career Self-Check: The Four A's</title>
+<style>
+:root{--navy:#0b2a4a;--blue:#1f6fb5;--gold:#f2a900;--bg:#f6f8fb;--ok:#2e9e5b;--mid:#e0a100;--low:#d0503c}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:#1a1a1a}
+header{background:var(--navy);color:#fff;padding:18px 16px}
+header h1{margin:0;font-size:20px}header p{margin:4px 0 0;color:#bcd3ee;font-size:13px}
+.wrap{max-width:720px;margin:0 auto;padding:14px}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+h2{margin:0 0 4px;color:var(--navy);font-size:18px}.sub{color:#555;font-size:14px;margin:0 0 12px}
+.q{padding:12px 0;border-top:1px solid #e6ebf2}.q p{margin:0 0 8px;font-size:15px}
+.opts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.opts button{padding:10px 4px;border:1px solid #c5d3e4;background:#fff;border-radius:8px;font-size:12px;cursor:pointer}
+.opts button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:14px}
+.btn{background:var(--navy);color:#fff;border:0;border-radius:8px;padding:12px 18px;font-size:15px;cursor:pointer}
+.btn.alt{background:#fff;color:var(--navy);border:1px solid var(--navy)}.btn:disabled{opacity:.4;cursor:not-allowed}
+.prog{height:8px;background:#dbe5f1;border-radius:4px;overflow:hidden;margin-bottom:12px}.prog i{display:block;height:100%;background:var(--gold)}
+input[type=text]{width:100%;padding:11px;border:1px solid #c5d3e4;border-radius:8px;font-size:15px;margin:6px 0 12px}
+.bar{height:14px;background:#e6ebf2;border-radius:7px;overflow:hidden}.bar i{display:block;height:100%}
+.row{margin:12px 0}.row b{font-size:14px}.row span{float:right;font-size:14px;font-weight:bold}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;color:#fff;font-size:12px;margin-left:6px}
+.code{font-size:44px;font-weight:bold;letter-spacing:8px;color:var(--navy);text-align:center;margin:6px 0}
+.note{font-size:12px;color:#666}ul{margin:6px 0;padding-left:20px}li{margin:3px 0;font-size:14px}
+#qrbox svg{max-width:240px;height:auto}
+@media print{header,.nav,#teacher,.noprint{display:none}body{background:#fff}.card{box-shadow:none;border:1px solid #ccc}}
+</style></head><body>
+<header><h1>Career Self-Check: The Four A's</h1><p>Ability · Ambition · Accessibility · Acceptability</p></header>
+<div class="wrap"><div id="app"></div>
+<details id="teacher" class="card"><summary><b>Teacher: make a QR code for this page</b></summary>
+<p class="note">Host this file online (e.g. Netlify Drop, GitHub Pages, Google Sites), open the link, and the box below fills in automatically. Or paste any link.</p>
+<input type="text" id="qrurl" placeholder="https://your-link-here">
+<button class="btn" id="mkqr">Create QR</button> <button class="btn alt" id="dlqr" style="display:none">Download QR (SVG)</button>
+<div id="qrbox" style="margin-top:12px"></div></details></div>
+<script>function qrMatrix(text){
+  var bytes=Array.prototype.slice.call(new TextEncoder().encode(text));
+  var ECC=[-1,10,16,26,18,24,16,18,22,22,26,30,22,22,24,24];
+  var BLK=[-1,1,1,1,2,2,4,4,4,5,5,5,8,9,9,10];
+  function raw(v){var r=(16*v+128)*v+64;if(v>=2){var n=Math.floor(v/7)+2;r-=(25*n-10)*n-55;if(v>=7)r-=36;}return r;}
+  var ver,cap;
+  for(ver=1;ver<=15;ver++){cap=Math.floor(raw(ver)/8)-ECC[ver]*BLK[ver];var cc=ver<=9?8:16;if(4+cc+bytes.length*8<=cap*8)break;}
+  if(ver>15)throw new Error("Text too long for QR");
+  var bits=[];
+  function put(val,len){for(var i=len-1;i>=0;i--)bits.push((val>>>i)&1);}
+  put(4,4);put(bytes.length,ver<=9?8:16);
+  bytes.forEach(function(b){put(b,8);});
+  put(0,Math.min(4,cap*8-bits.length));
+  while(bits.length%8)bits.push(0);
+  var data=[];
+  for(var i=0;i<bits.length;i+=8){var b=0;for(var j=0;j<8;j++)b=(b<<1)|bits[i+j];data.push(b);}
+  for(var pad=0xEC;data.length<cap;pad^=0xEC^0x11)data.push(pad);
+
+  function mul(x,y){var z=0;for(var i=7;i>=0;i--){z=(z<<1)^((z>>>7)*0x11D);z^=((y>>>i)&1)*x;}return z;}
+  function rsDiv(deg){var r=[];for(var i=0;i<deg;i++)r.push(0);r[deg-1]=1;var root=1;
+    for(var i=0;i<deg;i++){for(var j=0;j<deg;j++){r[j]=mul(r[j],root);if(j+1<deg)r[j]^=r[j+1];}root=mul(root,2);}return r;}
+  function rsRem(d,div){var r=div.map(function(){return 0;});
+    d.forEach(function(b){var f=b^r.shift();r.push(0);div.forEach(function(c,i){r[i]^=mul(c,f);});});return r;}
+
+  var nb=BLK[ver],el=ECC[ver],rc=Math.floor(raw(ver)/8);
+  var nShort=nb-rc%nb,shortLen=Math.floor(rc/nb);
+  var blocks=[],k=0,div=rsDiv(el);
+  for(var i=0;i<nb;i++){
+    var len=shortLen-el+(i<nShort?0:1);
+    var dat=data.slice(k,k+len);k+=len;
+    var ecc=rsRem(dat,div);
+    if(i<nShort)dat.push(0);
+    blocks.push(dat.concat(ecc));
+  }
+  var cw=[];
+  for(var i=0;i<blocks[0].length;i++)
+    for(var j=0;j<blocks.length;j++)
+      if(i!=shortLen-el||j>=nShort)cw.push(blocks[j][i]);
+
+  var size=ver*4+17,mod=[],fn=[];
+  for(var y=0;y<size;y++){mod.push(new Array(size).fill(false));fn.push(new Array(size).fill(false));}
+  function setF(x,y,d){mod[y][x]=d;fn[y][x]=true;}
+  for(var i=0;i<size;i++){setF(6,i,i%2==0);setF(i,6,i%2==0);}
+  function finder(cx,cy){for(var dy=-4;dy<=4;dy++)for(var dx=-4;dx<=4;dx++){
+    var d=Math.max(Math.abs(dx),Math.abs(dy)),x=cx+dx,y=cy+dy;
+    if(x>=0&&x<size&&y>=0&&y<size)setF(x,y,d!=2&&d!=4);}}
+  finder(3,3);finder(size-4,3);finder(3,size-4);
+  var pos=[];
+  if(ver>1){var n=Math.floor(ver/7)+2;var step=Math.ceil((ver*4+4)/(n*2-2))*2;pos=[6];
+    for(var p=size-7;pos.length<n;p-=step)pos.splice(1,0,p);}
+  for(var i=0;i<pos.length;i++)for(var j=0;j<pos.length;j++){
+    if((i==0&&j==0)||(i==0&&j==pos.length-1)||(i==pos.length-1&&j==0))continue;
+    for(var dy=-2;dy<=2;dy++)for(var dx=-2;dx<=2;dx++)setF(pos[i]+dx,pos[j]+dy,Math.max(Math.abs(dx),Math.abs(dy))!=1);
+  }
+  function drawFormat(m,mask){
+    var d=mask,r=d;for(var i=0;i<10;i++)r=(r<<1)^((r>>>9)*0x537);
+    var bs=((d<<10)|r)^0x5412;
+    function bit(i){return ((bs>>>i)&1)!=0;}
+    function s(x,y,v){m[y][x]=v;fn[y][x]=true;}
+    for(var i=0;i<=5;i++)s(8,i,bit(i));
+    s(8,7,bit(6));s(8,8,bit(7));s(7,8,bit(8));
+    for(var i=9;i<15;i++)s(14-i,8,bit(i));
+    for(var i=0;i<8;i++)s(size-1-i,8,bit(i));
+    for(var i=8;i<15;i++)s(8,size-15+i,bit(i));
+    s(8,size-8,true);
+  }
+  drawFormat(mod,0);
+  if(ver>=7){var r=ver;for(var i=0;i<12;i++)r=(r<<1)^((r>>>11)*0x1F25);
+    var vb=(ver<<12)|r;
+    for(var i=0;i<18;i++){var bt=((vb>>>i)&1)!=0,a=size-11+i%3,b=Math.floor(i/3);setF(a,b,bt);setF(b,a,bt);}}
+  var idx=0;
+  for(var right=size-1;right>=1;right-=2){
+    if(right==6)right=5;
+    for(var vert=0;vert<size;vert++)for(var j=0;j<2;j++){
+      var x=right-j,up=((right+1)&2)==0,y=up?size-1-vert:vert;
+      if(!fn[y][x]&&idx<cw.length*8){mod[y][x]=((cw[idx>>>3]>>>(7-(idx&7)))&1)!=0;idx++;}
+    }
+  }
+  var masks=[
+    function(x,y){return (x+y)%2==0;},function(x,y){return y%2==0;},function(x,y){return x%3==0;},
+    function(x,y){return (x+y)%3==0;},function(x,y){return (Math.floor(x/3)+Math.floor(y/2))%2==0;},
+    function(x,y){return x*y%2+x*y%3==0;},function(x,y){return (x*y%2+x*y%3)%2==0;},
+    function(x,y){return ((x+y)%2+x*y%3)%2==0;}];
+  function penalty(m){
+    var s=0;
+    for(var pass=0;pass<2;pass++)for(var a=0;a<size;a++){var run=1;
+      for(var b=1;b<size;b++){var cur=pass?m[b][a]:m[a][b],pr=pass?m[b-1][a]:m[a][b-1];
+        if(cur==pr){run++;if(run==5)s+=3;else if(run>5)s++;}else run=1;}}
+    var dark=0;
+    for(var y=0;y<size;y++)for(var x=0;x<size;x++){
+      if(m[y][x])dark++;
+      if(x<size-1&&y<size-1&&m[y][x]==m[y][x+1]&&m[y][x]==m[y+1][x]&&m[y][x]==m[y+1][x+1])s+=3;}
+    s+=Math.floor(Math.abs(dark*20-size*size*10)/(size*size))*10;
+    return s;
+  }
+  var best=null,bestP=1e9;
+  for(var mk=0;mk<8;mk++){
+    var m=mod.map(function(r){return r.slice();});
+    for(var y=0;y<size;y++)for(var x=0;x<size;x++)if(!fn[y][x]&&masks[mk](x,y))m[y][x]=!m[y][x];
+    drawFormat(m,mk);
+    var p=penalty(m);if(p<bestP){bestP=p;best=m;}
+  }
+  return best;
+}
+function qrSvg(text,px,dark,light){
+  var m=qrMatrix(text),n=m.length,q=4,d="";
+  for(var y=0;y<n;y++){var x=0;while(x<n){if(m[y][x]){var s=x;while(x<n&&m[y][x])x++;d+="M"+(s+q)+" "+(y+q)+"h"+(x-s)+"v1h-"+(x-s)+"z";}else x++;}}
+  var t=n+q*2;
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+t+' '+t+'" width="'+px+'" height="'+px+'" shape-rendering="crispEdges"><rect width="'+t+'" height="'+t+'" fill="'+(light||"#fff")+'"/><path fill="'+(dark||"#000")+'" d="'+d+'"/></svg>';
+}
+</script>
+<script>
+var L=[["Not me",1],["A little",2],["Mostly me",3],["Very me",4]];
+var TYPES={
+R:{n:"Realistic",tag:"The Doer",c:["Engineering (Mechanical, Electrical, Civil)","Aviation / Maritime","Agriculture & Fisheries","Industrial / Electronics Technology"]},
+I:{n:"Investigative",tag:"The Thinker",c:["Computer Science / IT","Medical Technology / Pharmacy","Chemistry / Chemical Engineering","Mathematics / Actuarial Science"]},
+A:{n:"Artistic",tag:"The Creator",c:["Multimedia Arts / Animation","Architecture","Communication / Journalism","Fine Arts / Design"]},
+S:{n:"Social",tag:"The Helper",c:["Education (Teaching)","Nursing / Allied Health","Psychology / Guidance","Social Work / Community Development"]},
+E:{n:"Enterprising",tag:"The Persuader",c:["Business Administration / Marketing","Entrepreneurship","Hospitality & Tourism Management","Law / Political Science"]},
+C:{n:"Conventional",tag:"The Organizer",c:["Accountancy","Banking & Finance","Information Systems","Office / Logistics Management"]}};
+var S=[
+{id:"RI",title:"Part 1 · Who are you?",sub:"Interests (Holland, 1997). How much does each sentence sound like you?",items:[
+["R","I enjoy fixing, building or working with tools and machines."],
+["R","I prefer hands-on or outdoor work over sitting all day."],
+["I","I enjoy figuring out how things work and solving puzzles."],
+["I","I like experiments, research and analyzing information."],
+["A","I love creating things: art, design, writing, music or videos."],
+["A","I like projects where I can be original and imaginative."],
+["S","I feel good when I teach, help or take care of others."],
+["S","Friends often come to me to talk about their problems."],
+["E","I like leading a group and convincing people to join my idea."],
+["E","I enjoy organizing events, selling things or starting a small business."],
+["C","I like being organized, with clear steps, records and schedules."],
+["C","I am careful with numbers, details and accuracy."]]},
+{id:"AB",name:"Ability",title:"Part 2 · Ability",sub:"Can I do it?",items:[
+["AB","I am confident I can pass the main subjects my chosen course requires."],
+["AB","My grades in related subjects (math, science, English, etc.) are good."],
+["AB","I learn new skills quickly when I practice."],
+["AB","Teachers or classmates say I am good at something related to my choice."]],
+tips:["Ask a teacher which subjects matter most for your course and review them now.","Try a free online lesson or short project in your field to test your skills.","Keep building one strength with practice: ability grows with effort."]},
+{id:"AM",name:"Ambition",title:"Part 3 · Ambition",sub:"I want to be a/an ____. How strong is your drive?",items:[
+["AM","I have clear goals for my future (I can name the job I want)."],
+["AM","I start things on my own without waiting to be told."],
+["AM","I stay disciplined: I finish tasks even when I don't feel like it."],
+["AM","I keep trying after failing or getting a low score."],
+["AM","I am willing to learn new things, even difficult ones."],
+["AM","I want to improve myself every year."]],
+tips:["Write one goal for this school year and one small step you can do this week.","Pick one habit (study time, reading, practice) and do it daily for 21 days.","Ability without ambition stays potential. Find one person who inspires you and ask how they started."]},
+{id:"AV",name:"Accessibility",title:"Part 4 · Accessibility",sub:"Where can I take the course?",items:[
+["AV","The course I want is offered by a school I can attend."],
+["AV","The school is near my home or I can reasonably travel to it."],
+["AV","The program is available in my city or province."],
+["AV","There are online or alternative options if I cannot go in person."],
+["AV","My family and I can handle the costs (tuition, transport, allowance)."],
+["AV","I know about scholarships, SUCs or other support I can apply for."]],
+tips:["List 3 schools offering your course and compare location and cost.","Research scholarships and state universities (SUCs) with lower tuition.","Look for online, ladderized or TESDA pathways as a backup plan."]},
+{id:"AC",name:"Acceptability",title:"Part 5 · Acceptability",sub:"After graduation, will I find work easily?",items:[
+["AC","I checked whether jobs for my chosen course are in demand."],
+["AC","I looked up typical salaries or job openings for this career."],
+["AC","I know if the course needs a licensure exam and I am ready for it."],
+["AC","I know other jobs I could take if my first choice is not available."]],
+tips:["Search job sites for your target role and note the skills employers ask for.","Check the Philippine Statistics Authority and DOLE for wage and job data.","Ask a graduate or professional in the field about their first job after graduation."]}];
+var ans={},step=-1,info={name:"",course:""};
+var total=S.reduce(function(a,s){return a+s.items.length;},0);
+function app(){return document.getElementById("app");}
+function render(){
+  var h="";
+  if(step<0){
+    h='<div class="card"><h2>Know yourself, plan your career</h2><p class="sub">Answer '+total+' short questions. Your result appears right after, only on your device. There are no right or wrong answers.</p>'+
+    '<label>Nickname (optional)<input type="text" id="nm" value="'+info.name+'"></label>'+
+    '<label>Course or career I am considering (optional)<input type="text" id="cs" value="'+info.course+'"></label>'+
+    '<button class="btn" id="go">Start</button></div>';
+  }else if(step<S.length){
+    var s=S[step],done=0;
+    for(var k in ans)done++;
+    h='<div class="prog"><i style="width:'+Math.round(done/total*100)+'%"></i></div><div class="card"><h2>'+s.title+'</h2><p class="sub">'+s.sub+'</p>';
+    s.items.forEach(function(it,i){
+      var key=s.id+i;
+      h+='<div class="q"><p>'+(i+1)+'. '+it[1]+'</p><div class="opts">'+L.map(function(o){
+        return '<button data-k="'+key+'" data-v="'+o[1]+'" class="'+(ans[key]==o[1]?"on":"")+'">'+o[0]+'</button>';}).join("")+'</div></div>';});
+    var ok=s.items.every(function(it,i){return ans[s.id+i];});
+    h+='</div><div class="nav"><button class="btn alt" id="bk">Back</button><button class="btn" id="nx" '+(ok?"":"disabled")+'>'+(step==S.length-1?"See my result":"Next")+'</button></div>';
+  }else{h=result();}
+  app().innerHTML=h;
+  if(step>=S.length)window.scrollTo(0,0);
+}
+function pct(s,sum,n){return Math.round((sum-n)/(n*3)*100);}
+function result(){
+  var rt={R:0,I:0,A:0,S:0,E:0,C:0},sc={};
+  S[0].items.forEach(function(it,i){rt[it[0]]+=ans["RI"+i];});
+  var order=Object.keys(rt).sort(function(a,b){return rt[b]-rt[a];});
+  var code=order.slice(0,3).join("");
+  S.slice(1).forEach(function(s){var sum=0;s.items.forEach(function(it,i){sum+=ans[s.id+i];});sc[s.id]=pct(s,sum,s.items.length);});
+  var ids=["AB","AM","AV","AC"],avg=Math.round(ids.reduce(function(a,k){return a+sc[k];},0)/4);
+  var low=ids.slice().sort(function(a,b){return sc[a]-sc[b];})[0];
+  function lvl(p){return p>=75?["Strong","var(--ok)"]:p>=50?["Developing","var(--mid)"]:["Needs attention","var(--low)"];}
+  var h='<div class="card"><h2>'+(info.name?info.name+", your":"Your")+' result</h2>'+
+  (info.course?'<p class="sub">Considering: <b>'+info.course+'</b></p>':'')+
+  '<p class="sub">Your interest code (Holland)</p><div class="code">'+code+'</div><p style="text-align:center;margin:0 0 8px">'+
+  order.slice(0,3).map(function(k){return TYPES[k].n+" ("+TYPES[k].tag+")";}).join(" · ")+'</p></div>';
+  h+='<div class="card"><h2>Your interests</h2>'+order.map(function(k){var p=Math.round((rt[k]-2)/6*100);
+    return '<div class="row"><b>'+TYPES[k].n+'</b><span>'+p+'%</span><div class="bar"><i style="width:'+p+'%;background:var(--blue)"></i></div></div>';}).join("")+
+  '<h2 style="margin-top:14px">Course areas to explore</h2><ul>'+order.slice(0,2).map(function(k){return TYPES[k].c.map(function(c){return "<li>"+c+"</li>";}).join("");}).join("")+'</ul></div>';
+  h+='<div class="card"><h2>Your Four A\'s</h2><p class="sub">Overall readiness: <b>'+avg+'%</b> ('+lvl(avg)[0]+')</p>'+
+  ids.map(function(k){var s=S.filter(function(x){return x.id==k;})[0],l=lvl(sc[k]);
+    return '<div class="row"><b>'+s.name+'</b><span class="tag" style="background:'+l[1]+'">'+l[0]+'</span><span>'+sc[k]+'%</span><div class="bar"><i style="width:'+sc[k]+'%;background:'+l[1]+'"></i></div></div>';}).join("")+'</div>';
+  var ls=S.filter(function(x){return x.id==low;})[0];
+  h+='<div class="card"><h2>Your focus area: '+ls.name+'</h2><ul>'+ls.tips.map(function(t){return "<li>"+t+"</li>";}).join("")+'</ul></div>';
+  h+='<p class="note">This is a sample self-reflection tool based on the Four A\'s and Holland\'s interest types. It is not a standardized test. Talk with your guidance counselor before deciding.</p>'+
+  '<div class="nav noprint"><button class="btn alt" id="rt">Retake</button><button class="btn" id="pr">Print / Save as PDF</button></div>';
+  try{localStorage.setItem("careerResult",JSON.stringify({code:code,scores:sc,date:new Date().toISOString()}));}catch(e){}
+  return h;
+}
+document.addEventListener("click",function(e){
+  var t=e.target;
+  if(t.dataset&&t.dataset.k){ans[t.dataset.k]=+t.dataset.v;render();return;}
+  if(t.id=="go"){info.name=document.getElementById("nm").value.trim();info.course=document.getElementById("cs").value.trim();step=0;render();}
+  else if(t.id=="nx"){step++;render();}
+  else if(t.id=="bk"){step--;render();}
+  else if(t.id=="rt"){ans={};step=-1;render();}
+  else if(t.id=="pr"){window.print();}
+});
+var u=document.getElementById("qrurl");
+if(/^https?:/.test(location.href))u.value=location.href.split("#")[0];
+var lastSvg="";
+document.getElementById("mkqr").onclick=function(){
+  var v=u.value.trim();if(!v)return;
+  try{lastSvg=qrSvg(v,240);document.getElementById("qrbox").innerHTML=lastSvg;document.getElementById("dlqr").style.display="inline-block";}
+  catch(err){document.getElementById("qrbox").textContent=err.message;}
+};
+document.getElementById("dlqr").onclick=function(){
+  var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([lastSvg],{type:"image/svg+xml"}));a.download="career-quiz-qr.svg";a.click();
+};
+render();
+</script></body></html>
